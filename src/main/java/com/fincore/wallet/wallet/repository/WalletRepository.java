@@ -1,4 +1,4 @@
-package com.fincore.wallet.wallet;
+package com.fincore.wallet.wallet.repository;
 
 import com.fincore.wallet.wallet.entity.Wallet;
 import org.springframework.data.jpa.repository.JpaRepository;

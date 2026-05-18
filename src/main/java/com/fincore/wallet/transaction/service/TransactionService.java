@@ -2,6 +2,9 @@ package com.fincore.wallet.transaction.service;
 
 import com.fincore.wallet.auth.entity.User;
 import com.fincore.wallet.auth.repository.UserRepository;
+import com.fincore.wallet.common.constants.TransactionLimitConstants;
+import com.fincore.wallet.customer.entity.CustomerProfile;
+import com.fincore.wallet.customer.repository.CustomerProfileRepository;
 import com.fincore.wallet.transaction.dto.DepositRequest;
 import com.fincore.wallet.transaction.dto.TransactionHistoryResponse;
 import com.fincore.wallet.transaction.dto.TransferRequest;
@@ -13,14 +16,17 @@ import com.fincore.wallet.transaction.enums.TransactionStatus;
 import com.fincore.wallet.transaction.enums.TransactionType;
 import com.fincore.wallet.transaction.repository.LedgerEntryRepository;
 import com.fincore.wallet.transaction.repository.TransactionRepository;
-import com.fincore.wallet.wallet.WalletRepository;
+import com.fincore.wallet.wallet.enums.WalletStatus;
+import com.fincore.wallet.wallet.repository.WalletRepository;
 import com.fincore.wallet.wallet.entity.Wallet;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.security.PublicKey;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,11 +38,13 @@ public class TransactionService {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final CustomerProfileRepository customerProfileRepository;
 
     @Transactional
     public String deposit(String email, DepositRequest request){
 
         Wallet wallet = getWalletByEmail(email);
+        validateWalletStatus(wallet);
         BigDecimal balanceBefore = wallet.getBalance();
 
         wallet.setBalance(wallet.getBalance().add(request.getAmount()));
@@ -55,6 +63,9 @@ public class TransactionService {
     @Transactional
     public String withdraw(String email, WithdrawRequest request){
         Wallet wallet= getWalletByEmail(email);
+
+        validateWalletStatus(wallet);
+        validateDailyTransactionLimit(wallet, request.getAmount(), TransactionType.WITHDRAWAL);
 
         if (wallet.getBalance().compareTo(request.getAmount()) < 0){
             throw new RuntimeException("Insufficient balance");
@@ -83,6 +94,10 @@ public class TransactionService {
         Wallet destinationWallet =walletRepository.findByWalletNumber(request.getDestinationWalletNumber()
         ).orElseThrow(() ->
                 new RuntimeException("Destination wallet not found"));
+
+        validateWalletStatus(sourceWallet);
+        validateWalletStatus(destinationWallet);
+        validateDailyTransactionLimit(sourceWallet, request.getAmount(), TransactionType.TRANSFER);
 
         //Prevent self transfer
         if (sourceWallet.getWalletNumber().equals(destinationWallet.getWalletNumber())){
@@ -211,4 +226,43 @@ public class TransactionService {
                 .orElseThrow(() ->
                         new RuntimeException("Wallet not found"));
     }
+
+    private void validateWalletStatus(Wallet wallet){
+        if (wallet.getStatus() != WalletStatus.ACTIVE){
+            throw new RuntimeException("Wallet is currently not active");
+        }
+    }
+
+    private void validateDailyTransactionLimit(Wallet wallet, BigDecimal requestAmount, TransactionType transactionType){
+        CustomerProfile profile = customerProfileRepository.findByUser(wallet.getUser()).orElseThrow(
+                () -> new RuntimeException("Customer profile not found")
+        );
+        BigDecimal limit = switch (profile.getTierLevel()){
+            case TIER_1 -> TransactionLimitConstants.TIER_1_LIMIT;
+            case TIER_2 -> TransactionLimitConstants.TIER_2_LIMIT;
+            case TIER_3 -> TransactionLimitConstants.TIER_3_LIMIT;
+        };
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+        BigDecimal todayTotal = transactionRepository.getDailyTransactionTotal(
+                wallet,
+                transactionType,
+                TransactionStatus.SUCCESS,
+                startOfDay,
+                endOfDay
+        );
+
+        BigDecimal projectedTotal = todayTotal.add(requestAmount);
+        if (projectedTotal.compareTo(limit) > 0){
+            throw  new RuntimeException(
+                    "Daily transaction limit exceeded for " + profile.getTierLevel().name());
+        }
+
+
+    }
+
+
 }

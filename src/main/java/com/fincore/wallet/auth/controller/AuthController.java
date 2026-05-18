@@ -36,4 +36,13 @@ public class AuthController {
                 .build();
     }
 
+    @PostMapping("/register-admin")
+    public ApiResponse<AuthResponse> registerAdmin(@RequestBody RegisterRequest request){
+        return ApiResponse.<AuthResponse>builder()
+                .success(true)
+                .message("Admin registered successfully")
+                .data(authService.registerAdmin(request))
+                .build();
+    }
+
 }

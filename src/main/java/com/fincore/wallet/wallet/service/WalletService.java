@@ -2,7 +2,8 @@ package com.fincore.wallet.wallet.service;
 
 import com.fincore.wallet.auth.entity.User;
 import com.fincore.wallet.auth.repository.UserRepository;
-import com.fincore.wallet.wallet.WalletRepository;
+import com.fincore.wallet.wallet.enums.WalletStatus;
+import com.fincore.wallet.wallet.repository.WalletRepository;
 import com.fincore.wallet.wallet.dto.WalletResponse;
 import com.fincore.wallet.wallet.entity.Wallet;
 import lombok.RequiredArgsConstructor;
@@ -47,4 +48,23 @@ public class WalletService {
                 .status(wallet.getStatus().name())
                 .build();
     }
+
+    public String freezeWallet(String walletNumber){
+        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
+                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+
+        wallet.setStatus(WalletStatus.FROZEN);
+        walletRepository.save(wallet);
+        return "Wallet frozen successfully";
+    }
+
+    public String unfreezeWallet(String walletNumber){
+        Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
+                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+
+        wallet.setStatus(WalletStatus.ACTIVE);
+        walletRepository.save(wallet);
+        return "Wallet unfrozen successfully";
+    }
+
 }

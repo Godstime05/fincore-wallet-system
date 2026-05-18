@@ -2,12 +2,11 @@ package com.fincore.wallet.wallet.controller;
 
 import com.fincore.wallet.common.response.ApiResponse;
 import com.fincore.wallet.wallet.dto.WalletResponse;
+import com.fincore.wallet.wallet.dto.WalletStatusRequest;
 import com.fincore.wallet.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/wallets")
@@ -24,4 +23,21 @@ public class WalletController {
                 .data(walletService.getMyWallet(email))
                 .build();
     }
+
+    @PostMapping("/freeze")
+    public ApiResponse<String> freezeWallet(@RequestBody WalletStatusRequest request){
+        return ApiResponse.<String>builder()
+                .success(true)
+                .message(walletService.freezeWallet(request.getWalletNumber()))
+                .build();
+    }
+
+    @PostMapping("/unfreeze")
+    public ApiResponse<String> unfreezeWallet(@RequestBody WalletStatusRequest request){
+        return ApiResponse.<String>builder()
+                .success(true)
+                .message(walletService.unfreezeWallet(request.getWalletNumber()))
+                .build();
+    }
+
 }

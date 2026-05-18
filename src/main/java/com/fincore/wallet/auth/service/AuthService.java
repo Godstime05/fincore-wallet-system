@@ -49,4 +49,20 @@ public class AuthService {
                 .token(token)
                 .build();
     }
+
+    public AuthResponse registerAdmin(RegisterRequest request) {
+        User user = new User();
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        user.setRole(Role.ADMIN);
+        userRepository.save(user);
+        walletService.createWallet(user);
+        String token = jwtService.generateToken(user.getEmail());
+
+        return AuthResponse.builder()
+                .token(token)
+                .build();
+    }
 }

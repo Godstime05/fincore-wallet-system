@@ -41,17 +41,29 @@ public class SecurityConfig {
                 ))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                //AUTH
+                                "/api/v1/auth/**"
+                        ).permitAll()
+
+                        .requestMatchers(
                                 //Swagger
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/api-docs/**"
                         ).permitAll()
-                        //Auth APIs
+                        //Admin only
                         .requestMatchers(
-                                "/api/v1/auth/**"
-                        )
-                        .permitAll()
+                                "/api/v1/wallets/freeze",
+                                "/api/v1/wallets/unfreeze"
+                        ).hasRole("ADMIN")
+                        //CUSTOMER + ADMIN
+                        .requestMatchers(
+                                "/api/v1/wallets/**",
+                                "/api/v1/transactions/**",
+                                "/api/v1/customers/**"
+                        ).hasAnyRole("CUSTOMER","ADMIN")
+
                         //Everything else
                         .anyRequest().authenticated()
                 )
