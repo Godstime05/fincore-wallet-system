@@ -1,9 +1,11 @@
 package com.fincore.wallet.wallet.controller;
 
 import com.fincore.wallet.common.response.ApiResponse;
+import com.fincore.wallet.wallet.dto.CreateWalletRequest;
 import com.fincore.wallet.wallet.dto.WalletResponse;
 import com.fincore.wallet.wallet.dto.WalletStatusRequest;
 import com.fincore.wallet.wallet.service.WalletService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +39,14 @@ public class WalletController {
         return ApiResponse.<String>builder()
                 .success(true)
                 .message(walletService.unfreezeWallet(request.getWalletNumber()))
+                .build();
+    }
+
+    @PostMapping("/create")
+    public ApiResponse<String> createWallet(@Valid @RequestBody CreateWalletRequest request){
+        return ApiResponse.<String>builder()
+                .success(true)
+                .message(walletService.createWalletForUser(request))
                 .build();
     }
 

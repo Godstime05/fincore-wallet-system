@@ -6,6 +6,7 @@ import com.fincore.wallet.auth.dto.RegisterRequest;
 import com.fincore.wallet.auth.entity.User;
 import com.fincore.wallet.auth.repository.UserRepository;
 import com.fincore.wallet.common.enums.Role;
+import com.fincore.wallet.exception.BusinessException;
 import com.fincore.wallet.security.JwtService;
 import com.fincore.wallet.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +43,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())){
-            throw new RuntimeException("Invalid Credentials");
+            throw new BusinessException("Invalid Credentials");
         }
         String token = jwtService.generateToken(user.getEmail());
         return AuthResponse.builder()

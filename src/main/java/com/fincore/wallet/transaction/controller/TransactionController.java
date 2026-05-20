@@ -6,6 +6,7 @@ import com.fincore.wallet.transaction.dto.TransactionHistoryResponse;
 import com.fincore.wallet.transaction.dto.TransferRequest;
 import com.fincore.wallet.transaction.dto.WithdrawRequest;
 import com.fincore.wallet.transaction.service.TransactionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping("/deposit")
-    public ApiResponse<String>deposit(Authentication authentication, @RequestBody DepositRequest request){
+    public ApiResponse<String>deposit(Authentication authentication, @Valid @RequestBody DepositRequest request){
         return ApiResponse.<String>builder()
                 .success(true)
                 .message(transactionService.deposit(authentication.getName(), request))
@@ -28,7 +29,7 @@ public class TransactionController {
     }
 
     @PostMapping("/withdraw")
-    public ApiResponse<String>withdraw(Authentication authentication, @RequestBody WithdrawRequest request){
+    public ApiResponse<String>withdraw(Authentication authentication, @Valid @RequestBody WithdrawRequest request){
         return ApiResponse.<String>builder()
                 .success(true)
                 .message(transactionService.withdraw(authentication.getName(), request))
@@ -36,7 +37,7 @@ public class TransactionController {
     }
 
     @PostMapping("/transfer")
-    public ApiResponse<String>transfer(Authentication authentication, @RequestBody TransferRequest request){
+    public ApiResponse<String>transfer(Authentication authentication, @Valid @RequestBody TransferRequest request){
         return ApiResponse.<String>builder()
                 .success(true)
                 .message(transactionService.transfer(authentication.getName(), request))

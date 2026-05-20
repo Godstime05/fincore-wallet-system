@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 public class Wallet extends BaseEntity {
 
     @Column(nullable = false, unique = true)
+    private String walletId;
+
+    @Column(nullable = false, unique = true)
     private String walletNumber;
 
     @Column(nullable = false)

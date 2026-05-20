@@ -1,10 +1,12 @@
 package com.fincore.wallet.transaction.service;
 
+import com.fincore.wallet.audit.service.AuditService;
 import com.fincore.wallet.auth.entity.User;
 import com.fincore.wallet.auth.repository.UserRepository;
 import com.fincore.wallet.common.constants.TransactionLimitConstants;
 import com.fincore.wallet.customer.entity.CustomerProfile;
 import com.fincore.wallet.customer.repository.CustomerProfileRepository;
+import com.fincore.wallet.exception.BusinessException;
 import com.fincore.wallet.transaction.dto.DepositRequest;
 import com.fincore.wallet.transaction.dto.TransactionHistoryResponse;
 import com.fincore.wallet.transaction.dto.TransferRequest;
@@ -39,6 +41,8 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final CustomerProfileRepository customerProfileRepository;
+    private final AuditService auditService;
+
 
     @Transactional
     public String deposit(String email, DepositRequest request){
@@ -56,6 +60,13 @@ public class TransactionService {
                 TransactionType.DEPOSIT,"Wallet deposit",
                 balanceBefore, balanceAfter, EntryType.CREDIT);
 
+        auditService.logAction(
+                "DEPOSIT",
+                email,
+                "WALLET",
+                "Deposit of " + request.getAmount() + " into wallet " + wallet.getWalletNumber(),
+                "SUCCESS");
+
         return "Deposit successful";
 
     }
@@ -68,7 +79,7 @@ public class TransactionService {
         validateDailyTransactionLimit(wallet, request.getAmount(), TransactionType.WITHDRAWAL);
 
         if (wallet.getBalance().compareTo(request.getAmount()) < 0){
-            throw new RuntimeException("Insufficient balance");
+            throw new BusinessException("Insufficient balance");
         }
 
         BigDecimal balanceBefore = wallet.getBalance();
@@ -82,6 +93,13 @@ public class TransactionService {
                 TransactionType.WITHDRAWAL, "Wallet withdrawal",
                 balanceBefore, balanceAfter, EntryType.DEBIT);
 
+        auditService.logAction(
+                "WITHDRAWAL",
+                email,
+                "WALLET",
+                "Withdrawal of " + request.getAmount() + " from wallet " + wallet.getWalletNumber(),
+                "SUCCESS");
+
         return "Withdrawal successful";
 
     }
@@ -93,7 +111,7 @@ public class TransactionService {
 
         Wallet destinationWallet =walletRepository.findByWalletNumber(request.getDestinationWalletNumber()
         ).orElseThrow(() ->
-                new RuntimeException("Destination wallet not found"));
+                new BusinessException("Destination wallet not found"));
 
         validateWalletStatus(sourceWallet);
         validateWalletStatus(destinationWallet);
@@ -101,17 +119,17 @@ public class TransactionService {
 
         //Prevent self transfer
         if (sourceWallet.getWalletNumber().equals(destinationWallet.getWalletNumber())){
-            throw new RuntimeException("You cannot transfer to your own wallet");
+            throw new BusinessException("You cannot transfer to your own wallet");
         }
 
         // validate amount
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0){
-            throw new RuntimeException("Transfer amount must be greater than zero");
+            throw new BusinessException("Transfer amount must be greater than zero");
         }
 
         // validate sufficient balance
         if (sourceWallet.getBalance().compareTo(request.getAmount()) <0){
-            throw new RuntimeException("Insufficient balance");
+            throw new BusinessException("Insufficient balance");
         }
 
         //Source Wallet Processing
@@ -138,6 +156,12 @@ public class TransactionService {
         saveTransaction(destinationWallet, request.getAmount(), TransactionType.TRANSFER,
                 "Transfer from " + sourceWallet.getWalletNumber(),
                 destinationBalanceBefore, destinationBalanceAfter, EntryType.CREDIT);
+
+        auditService.logAction("TRANSFER",
+                email,
+                "WALLET",
+                "Transfer of " + request.getAmount() + " from " + sourceWallet.getWalletNumber() + " to " + destinationWallet.getWalletNumber(),
+                "SUCCESS");
 
         return "Transfer successful";
 
@@ -173,11 +197,8 @@ public class TransactionService {
                 .toList();
     }
 
-    private void saveTransaction(
-            Wallet wallet, BigDecimal amount,
-            TransactionType transactionType,
-            String narration, BigDecimal balanceBefore,
-            BigDecimal balanceAfter, EntryType entryType) {
+    private void saveTransaction(Wallet wallet, BigDecimal amount, TransactionType transactionType,
+            String narration, BigDecimal balanceBefore, BigDecimal balanceAfter, EntryType entryType) {
 
         Transaction transaction = new Transaction();
 
@@ -216,7 +237,7 @@ public class TransactionService {
 
     private Wallet getWalletByEmail(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() ->
-                new RuntimeException("User not found"));
+                new BusinessException("User not found"));
         return walletRepository.findAll().stream().filter(
                 wallet -> wallet.getUser()
                         .getId()
@@ -229,7 +250,7 @@ public class TransactionService {
 
     private void validateWalletStatus(Wallet wallet){
         if (wallet.getStatus() != WalletStatus.ACTIVE){
-            throw new RuntimeException("Wallet is currently not active");
+            throw new BusinessException("Wallet is currently not active");
         }
     }
 
@@ -263,6 +284,5 @@ public class TransactionService {
 
 
     }
-
 
 }

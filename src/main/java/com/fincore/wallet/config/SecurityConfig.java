@@ -4,6 +4,7 @@ import com.fincore.wallet.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -55,8 +56,16 @@ public class SecurityConfig {
                         //Admin only
                         .requestMatchers(
                                 "/api/v1/wallets/freeze",
-                                "/api/v1/wallets/unfreeze"
+                                "/api/v1/wallets/unfreeze",
+                                "/api/v1/audits/**",
+                                "/api/v1/wallets/create",
+                                "/api/v1/customers/*"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/v1/customers/*"
+                        ).hasRole("ADMIN")
+
                         //CUSTOMER + ADMIN
                         .requestMatchers(
                                 "/api/v1/wallets/**",

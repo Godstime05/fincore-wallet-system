@@ -9,11 +9,17 @@ import java.time.LocalDate;
 @Builder
 public class CustomerProfileResponse {
 
+    private String customerId;
+    private String customerNumber;
+
     private String firstName;
 
     private String lastName;
 
     private String phoneNumber;
+
+    private String walletId;
+    private String walletNumber;
 
     private String bvn;
 

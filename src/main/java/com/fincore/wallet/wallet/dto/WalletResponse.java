@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 @Builder
 public class WalletResponse {
 
+    private String walletId;
+
     private String walletNumber;
     private BigDecimal balance;
     private String status;

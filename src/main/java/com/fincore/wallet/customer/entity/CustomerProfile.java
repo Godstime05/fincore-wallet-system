@@ -16,6 +16,13 @@ import java.time.LocalDate;
 @Table(name = "customer_profiles")
 public class CustomerProfile extends BaseEntity {
 
+
+    @Column(nullable = false, unique = true)
+    private String customerId;
+
+    @Column(nullable = false, unique = true)
+    private String customerNumber;
+
     @Column(nullable = false)
     private String firstName;
 
